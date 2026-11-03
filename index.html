@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kantin Online</title>
+    <!-- Google Fonts & FontAwesome -->
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- CSS Terpisah -->
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+        <!-- Overlay Background untuk Efek Reveal Transisi -->
+            <!-- Dua overlay untuk teknik crossfade tanpa flash -->
+            <div id="bg-overlay-1" class="bg-layer"></div>
+            <div id="bg-overlay-2" class="bg-layer"></div>
+    <!-- 1. LANDING PAGE / FORM DATA DIRI (Tampil Pertama) -->
+    <div id="landing-page" class="landing-container">
+        <div class="landing-card">
+            <div class="landing-icon">
+                <i class="fa-solid fa-utensils"></i>
+            </div>
+            <h2>Selamat Datang di E-Kantin</h2>
+            <p>Silakan isi data diri Anda sebelum membuat pesanan</p>
+            
+            <form id="form-pemesan">
+                <div class="form-group">
+                    <label for="nama"><i class="fa-solid fa-user"></i> Nama Lengkap</label>
+                    <input type="text" id="nama" required placeholder="Masukkan Nama Anda">
+                </div>
+
+                <div class="form-group">
+                    <label for="kelas"><i class="fa-solid fa-school"></i> Kelas</label>
+                    <input type="text" id="kelas" required placeholder="Contoh: IX IT 1">
+                </div>
+
+                <div class="form-group">
+                    <label for="absen"><i class="fa-solid fa-list-ol"></i> Nomor Absen</label>
+                    <input type="number" id="absen" required placeholder="Contoh: 15">
+                </div>
+
+                <button type="submit" class="submit-btn">
+                    Mulai Memesan <i class="fa-solid fa-arrow-right"></i>
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- 2. APLIKASI UTAMA KANTIN (Awalnya Disembunyikan) -->
+    <div id="appContainer" style="display: none;">
+        <!-- Overlay -->
+        <div class="overlay" id="overlay" onclick="toggleCart()"></div>
+
+        <!-- Header -->
+        <header>
+            <div class="header-container">
+                <a href="#" class="logo">
+                    <div class="logo-icon"><i class="fa-solid fa-utensils"></i></div>
+                    <span>E-Kantin</span>
+                </a>
+                <button class="cart-trigger" onclick="toggleCart()">
+                    <i class="fa-solid fa-basket-shopping"></i>
+                    <span>Keranjang</span>
+                    <span class="cart-badge" id="cartBadge">0</span>
+                </button>
+            </div>
+        </header>
+
+        <!-- Hero Section -->
+        <section class="hero">
+            <div class="hero-card">
+                <div class="hero-text">
+                    <h1 id="sapaan-user">Pesan Makanan Kantin Secara Online</h1>
+                    <p>Nikmati jajanan favorit dari Kantin Bawah & Kantin Atas tanpa perlu mengantre!</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- Filter & Search Controls -->
+        <!-- Filter Controls Dual Tab -->
+<div class="controls">
+    <div class="filter-wrapper">
+        <!-- Kelompok Filter 1: Lokasi Kantin (Kiri) -->
+        <div class="filter-group" id="kantinFilterGroup">
+            <button class="tab-btn active" onclick="filterKantin('all', this)">Semua Kantin</button>
+            <button class="tab-btn" onclick="filterKantin('Kantin Bawah', this)">Kantin Bawah</button>
+            <button class="tab-btn" onclick="filterKantin('Kantin Atas', this)">Kantin Atas</button>
+        </div>
+
+        <!-- Kelompok Filter 2: Kategori Makanan/Minuman (Kanan) -->
+        <div class="filter-group" id="categoryFilterGroup">
+            <button class="tab-btn active" onclick="filterKategori('all', this)">Semua Jenis</button>
+            <button class="tab-btn" onclick="filterKategori('makanan', this)">Makanan</button>
+            <button class="tab-btn" onclick="filterKategori('minuman', this)">Minuman</button>
+        </div>
+    </div>
+
+    <!-- Pencarain -->
+    <div class="search-box">
+        <i class="fa-solid fa-magnifying-glass"></i>
+        <input type="text" id="searchInput" placeholder="Cari makanan atau minuman..." oninput="searchMenu()">
+    </div>
+</div>
+
+        <!-- Menu Cards Grid -->
+        <main class="container">
+            <div class="menu-grid" id="menuGrid"></div>
+        </main>
+
+        <!-- Cart Drawer Sidebar -->
+        <div class="cart-drawer" id="cartDrawer">
+            <div class="cart-header">
+                <h3><i class="fa-solid fa-cart-shopping"></i> Keranjang Saya</h3>
+                <button class="close-btn" onclick="toggleCart()"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            
+            <div class="cart-items" id="cartItems">
+                <div class="empty-cart">
+                    <i class="fa-solid fa-basket-shopping" style="font-size: 3rem; margin-bottom: 12px; color: #CCC;"></i>
+                    <p>Keranjang masih kosong</p>
+                </div>
+            </div>
+
+            <!-- Area Checkout & Opsi -->
+            <div class="checkout-options" style="padding: 0 18px;">
+                
+                <!-- Data Pemesan Sejajar Horizontal -->
+                <div class="user-inline-card">
+                    <div class="info-item">
+                        <i class="fa-solid fa-user"></i>
+                        <span id="summaryName">Nama Pemesan</span>
+                    </div>
+                    <div class="info-item">
+                        <i class="fa-solid fa-graduation-cap"></i>
+                        <span id="summaryClass">Kelas Absen</span>
+                    </div>
+                </div>
+
+                <!-- Input Hidden Data Pemesan -->
+                <input type="hidden" id="buyerName">
+                <input type="hidden" id="buyerClass">
+                <input type="hidden" id="buyerNote" value="Harap segera ambil di kantin">
+
+                <!-- KOTAK STATUS PESANAN (Awalnya tersembunyi) -->
+                <div id="orderStatusCard" style="display: none;" class="status-tracker-card">
+                    <div class="status-tracker-header">
+                        <i class="fa-solid fa-clock-rotate-left"></i>
+                        <span>Status Pesanan Terakhir</span>
+                    </div>
+                    <div id="statusBadgeDisplay" class="status-badge-inline status-pending">
+                        Pending (Menunggu)
+                    </div>
+                    <small id="statusTimeDisplay" class="status-time-text">Diisi otomatis...</small>
+                </div>
+
+                <!-- Opsi Pengambilan -->
+                <div class="option-group">
+                    <label class="group-label">Metode Pengambilan</label>
+                    <div class="option-grid">
+                        <label class="option-card">
+                            <input type="radio" name="deliveryMethod" value="Ambil Sendiri" checked onchange="updateDeliveryNote()">
+                            <div class="card-content">
+                                <i class="fa-solid fa-store"></i>
+                                <span>Ambil Sendiri</span>
+                            </div>
+                        </label>
+                        <label class="option-card">
+                            <input type="radio" name="deliveryMethod" value="Diantarkan" onchange="updateDeliveryNote()">
+                            <div class="card-content">
+                                <i class="fa-solid fa-person-biking"></i>
+                                <span>Diantarkan</span>
+                            </div>
+                        </label>
+                    </div>
+                </div>
+
+                <!-- Opsi Pembayaran -->
+                <div class="option-group">
+                    <label class="group-label">Metode Pembayaran</label>
+                    <div class="option-grid">
+                        <label class="option-card">
+                            <input type="radio" name="paymentMethod" value="wa" checked>
+                            <div class="card-content">
+                                <i class="fa-solid fa-money-bill-wave"></i>
+                                <span>Tunai / WA</span>
+                            </div>
+                        </label>
+                        <label class="option-card">
+                            <input type="radio" name="paymentMethod" value="qris">
+                            <div class="card-content">
+                                <i class="fa-solid fa-qrcode"></i>
+                                <span>QRIS</span>
+                            </div>
+                        </label>
+                    </div>
+                </div>
+
+                <!-- Total Harga -->
+                <div class="total-row">
+                    <span>Total:</span>
+                    <span id="cartTotal">Rp 0</span>
+                </div>
+
+                <!-- Tombol Utama -->
+                <button id="mainCheckoutBtn" class="checkout-btn" onclick="handleCheckout()">
+                    <i class="fa-solid fa-paper-plane"></i> <span>Kirim Pesanan</span>
+                </button>
+            </div>
+<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+
+<script>
+  const firebaseConfig = {
+    apiKey: "AIzaSyBWgfClcA-KTll8eOUPPC_OeAf9Rd3YNko",
+    authDomain: "admin-4e3c0.firebaseapp.com",
+    databaseURL: "https://admin-4e3c0-default-rtdb.firebaseio.com",
+    projectId: "admin-4e3c0",
+    storageBucket: "admin-4e3c0.firebasestorage.app",
+    messagingSenderId: "831713577264",
+    appId: "1:831713577264:web:4a3557fdfc7d3f9a2ca0f5",
+    measurementId: "G-25NF3E1X5W"
+  };
+
+  firebase.initializeApp(firebaseConfig);
+  const database = firebase.database();
+</script>
+    <!-- JavaScript Terpisah -->
+    <script src="style.js"></script>
+</body>
+</html>

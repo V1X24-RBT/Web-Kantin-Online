@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Dashboard - E-Kantin</title>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        body { font-family: 'Plus Jakarta Sans', sans-serif; background: #f4f6f9; margin: 0; padding: 20px; }
+        
+        /* Header Disesuaikan dengan Warna Utama E-Kantin (#3B9E8C) */
+        .header { 
+            display: flex; 
+            justify-content: space-between; 
+            align-items: center; 
+            background: #3B9E8C; 
+            color: white; 
+            padding: 16px 24px; 
+            border-radius: 12px; 
+            margin-bottom: 24px; 
+            box-shadow: 0 4px 15px rgba(59, 158, 140, 0.25); 
+        }
+        .header h2 { margin: 0; font-size: 1.3rem; }
+        .header-actions { display: flex; align-items: center; gap: 16px; }
+        .active-badge { background: rgba(255, 255, 255, 0.2); padding: 6px 12px; border-radius: 20px; font-size: 0.85rem; font-weight: 600; }
+        
+        .clear-all-btn { background: #EF4444; color: white; border: none; padding: 8px 14px; border-radius: 8px; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 6px; transition: background 0.2s; }
+        .clear-all-btn:hover { background: #DC2626; }
+        
+        .orders-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 20px; }
+        .order-card { background: white; border-radius: 12px; padding: 18px; border-left: 5px solid #3B9E8C; box-shadow: 0 4px 10px rgba(0,0,0,0.05); position: relative; }
+        .order-card.selesai { border-left-color: #10B981; opacity: 0.8; }
+        .order-header { display: flex; justify-content: space-between; font-weight: 700; margin-bottom: 10px; padding-right: 24px; }
+        .delete-single-btn { position: absolute; top: 14px; right: 14px; background: transparent; border: none; color: #EF4444; font-size: 1.1rem; cursor: pointer; transition: color 0.2s; }
+        .delete-single-btn:hover { color: #991B1B; }
+        .items-list { background: #f9fafb; padding: 10px; border-radius: 8px; font-size: 0.9rem; margin: 10px 0; }
+        .action-btn { background: #3B9E8C; color: white; border: none; padding: 8px 14px; border-radius: 6px; font-weight: 600; cursor: pointer; width: 100%; margin-top: 8px; transition: background 0.2s; }
+        .action-btn.done { background: #10B981; cursor: not-allowed; }
+    </style>
+</head>
+<body>
+
+    <div class="header">
+        <h2><i class="fa-solid fa-list-check"></i> Pesanan Masuk (Kantin)</h2>
+        <div class="header-actions">
+            <span id="orderCount" class="active-badge">0 Pesanan Active</span>
+            <button class="clear-all-btn" onclick="clearAllOrders()">
+                <i class="fa-solid fa-trash-can"></i> Hapus Semua Pesanan
+            </button>
+        </div>
+    </div>
+
+    <div class="orders-grid" id="ordersContainer">
+        <p>Memuat pesanan...</p>
+    </div>
+
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+
+    <script>
+      const firebaseConfig = {
+        apiKey: "AIzaSyBWgfClcA-KTll8eOUPPC_OeAf9Rd3YNko",
+        authDomain: "admin-4e3c0.firebaseapp.com",
+        databaseURL: "https://admin-4e3c0-default-rtdb.firebaseio.com",
+        projectId: "admin-4e3c0",
+        storageBucket: "admin-4e3c0.firebasestorage.app",
+        messagingSenderId: "831713577264",
+        appId: "1:831713577264:web:4a3557fdfc7d3f9a2ca0f5",
+        measurementId: "G-25NF3E1X5W"
+      };
+
+      firebase.initializeApp(firebaseConfig);
+      const database = firebase.database();
+
+      // Listen data secara Realtime dari Firebase
+      database.ref('pesanan/').on('value', (snapshot) => {
+          const container = document.getElementById('ordersContainer');
+          container.innerHTML = '';
+          const data = snapshot.val();
+
+          if (!data) {
+              container.innerHTML = '<p>Belum ada pesanan masuk.</p>';
+              document.getElementById('orderCount').innerText = '0 Pesanan Active';
+              return;
+          }
+
+          const keys = Object.keys(data).reverse(); // Urutkan dari pesanan terbaru
+          document.getElementById('orderCount').innerText = `${keys.length} Total Pesanan`;
+
+          keys.forEach(key => {
+              const order = data[key];
+              const isDone = order.status === 'Selesai';
+              
+              let itemsText = '';
+              if (order.items && Array.isArray(order.items)) {
+                  order.items.forEach(i => {
+                      itemsText += `<div>• ${i.nama} (${i.qty}x)</div>`;
+                  });
+              }
+
+              const card = document.createElement('div');
+              card.className = `order-card ${isDone ? 'selesai' : ''}`;
+              card.innerHTML = `
+                  <button class="delete-single-btn" title="Hapus Pesanan Ini" onclick="deleteSingleOrder('${key}')">
+                      <i class="fa-solid fa-trash"></i>
+                  </button>
+                  <div class="order-header">
+                      <span>${order.nama} ${order.kelas}</span>
+                      <small>${order.waktu}</small>
+                  </div>
+                  <div><strong>Metode:</strong> ${order.pengambilan} | <strong>Bayar:</strong> ${order.pembayaran}</div>
+                  <div class="items-list">${itemsText}</div>
+                  <div><strong>Total:</strong> Rp ${order.total ? order.total.toLocaleString('id-ID') : 0}</div>
+                  <button class="action-btn ${isDone ? 'done' : ''}" 
+                          onclick="markAsDone('${key}', '${order.status}')" 
+                          ${isDone ? 'disabled' : ''}>
+                      ${isDone ? '✓ Pesanan Selesai' : 'Tandai Selesai'}
+                  </button>
+              `;
+              container.appendChild(card);
+          });
+      });
+
+      // Fungsi hanya untuk mengubah status ke Selesai (Sekali Klik)
+      function markAsDone(key, currentStatus) {
+          if (currentStatus === 'Selesai') return;
+          
+          if (confirm('Tandai pesanan ini sebagai Selesai? Status tidak dapat diubah kembali.')) {
+              database.ref('pesanan/' + key).update({ status: 'Selesai' });
+          }
+      }
+
+      // Fungsi untuk menghapus pesanan satu-satu
+      function deleteSingleOrder(key) {
+          if (confirm('Apakah Anda yakin ingin menghapus pesanan ini?')) {
+              database.ref('pesanan/' + key).remove();
+          }
+      }
+
+      // Fungsi untuk menghapus seluruh pesanan sekaligus
+      function clearAllOrders() {
+          if (confirm('PERINGATAN: Apakah Anda yakin ingin menghapus SELURUH pesanan yang ada? Data yang dihapus tidak dapat dikembalikan.')) {
+              database.ref('pesanan/').remove();
+          }
+      }
+    </script>
+</body>
+</html>
